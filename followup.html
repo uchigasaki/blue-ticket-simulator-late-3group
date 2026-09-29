@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Blue Ticket Simulator | 1週間後アンケート</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#153047;background:#eef4f8;line-height:1.65}
+    *{box-sizing:border-box}body{margin:0}main{max-width:820px;margin:auto;padding:24px 16px 64px}h1{font-size:1.7rem;line-height:1.4}h2,legend{font-size:1.12rem;font-weight:700}header,.panel,fieldset{background:white;border:1px solid #d1dfe9;border-radius:14px;padding:20px;margin:0 0 18px}fieldset{min-width:0}legend{padding:0 8px;max-width:100%;overflow-wrap:anywhere}label.choice{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:8px 0;border:1px solid #b9cbd9;border-radius:9px;cursor:pointer}input[type=radio],input[type=checkbox]{width:20px;height:20px;flex:0 0 20px;margin-top:4px}input[type=number],textarea,select{font:inherit;padding:10px;border:1px solid #819aaa;border-radius:7px;max-width:100%}textarea{width:100%;min-height:100px}button{font:inherit;font-weight:700;min-height:48px;padding:10px 22px;background:#14629b;border:0;border-radius:8px;color:white;cursor:pointer}button:disabled{opacity:.55;cursor:wait}:focus-visible{outline:3px solid #da8b16;outline-offset:3px}.muted{color:#526675}.warning{background:#fff0ca;border-color:#d7a84b}[role=alert]{color:#932e18}.invalid{border:2px solid #ad3c24}img{max-width:100%;height:auto}.hidden{display:none}.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}#status{overflow-wrap:anywhere}@media(max-width:420px){main{padding:16px 10px 40px}header,.panel,fieldset{padding:15px}h1{font-size:1.45rem}}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="muted">Blue Ticket Simulator</p>
+      <h1 id="heading">1週間後アンケート</h1>
+      <label for="language">言語 / Language</label>
+      <select id="language"><option value="ja">日本語</option><option value="en">English</option></select>
+      <p id="intro"></p>
+    </header>
+    <div id="preview-warning" class="panel warning hidden" role="note"></div>
+    <p id="status" class="panel" role="status" aria-live="polite"></p>
+    <section id="forms-panel" class="panel hidden" aria-label="Google Forms">
+      <p id="forms-notice"></p>
+      <p><a id="forms-open" class="hidden" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"></a></p>
+      <button id="forms-check" type="button"></button>
+    </section>
+    <form id="followup-form" class="hidden" novalidate>
+      <div id="questions"></div>
+      <div class="panel actions"><button id="submit" type="submit"></button><span id="save-note" class="muted"></span></div>
+    </form>
+    <button id="retry" type="button" class="hidden"></button>
+  </main>
+  <script src="./experiment-config.js?v=20260927-forms-review-v1"></script>
+  <script src="./evaluation-data.js?v=20260923-review-v2"></script>
+  <script src="./followup-app.js?v=20260927-forms-review-v1"></script>
+</body>
+</html>

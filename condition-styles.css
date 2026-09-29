@@ -1,0 +1,288 @@
+/*
+ * Late-experiment UI additions only.
+ *
+ * Keep the original selectors in styles.css unchanged. Condition-specific
+ * elements must be rendered only for their matching condition; these rules do
+ * not target the original condition and cannot restyle its existing UI.
+ */
+
+body[data-condition="no_image"] .bts-late-scene {
+  display: block;
+  margin: 0 0 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border, #dbe3e8);
+  border-radius: 18px;
+  background: var(--soft, #f7f9fb);
+  color: var(--text, #1d2733);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+body[data-condition="no_image"] .bts-late-scene[hidden],
+body[data-condition="no_image"] .bts-late-scene:empty,
+body[data-condition="no_image"] .bts-late-scene.bts-late-is-empty {
+  display: none;
+}
+
+body[data-condition="no_image"] .bts-late-scene-label {
+  margin: 0 0 4px;
+  color: var(--accent2, #2f8f53);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+body[data-condition="no_image"] .bts-late-scene-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+body[data-condition="no_image"] .bts-late-scene-body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+body[data-condition="no_image"] .bts-late-scene:focus-visible {
+  outline: 3px solid rgba(46, 91, 255, .28);
+  outline-offset: 3px;
+}
+
+body[data-condition="improved"] .bts-late-improvement {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+body[data-condition="improved"] .bts-late-improvement[hidden],
+body[data-condition="improved"] .bts-late-improvement:empty,
+body[data-condition="improved"] .bts-late-improvement.bts-late-is-empty {
+  display: none;
+}
+
+body[data-condition="improved"] .bts-late-improvement-section {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #dbe3e8);
+  border-radius: 16px;
+  background: var(--soft, #f7f9fb);
+  color: var(--text, #1d2733);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+body[data-condition="improved"] .bts-late-improvement-section[hidden],
+body[data-condition="improved"] .bts-late-improvement-section:empty,
+body[data-condition="improved"] .bts-late-improvement-section.bts-late-is-empty {
+  display: none;
+}
+
+body[data-condition="improved"] .bts-late-improvement-section[data-kind="key-point"],
+body[data-condition="improved"] .bts-late-improvement-section[data-kind="decision-rule"] {
+  border-inline-start: 5px solid var(--accent, #2e5bff);
+}
+
+body[data-condition="improved"] .bts-late-improvement-section[data-kind="ok-example"] {
+  border-inline-start: 5px solid var(--good, #2f8f53);
+}
+
+body[data-condition="improved"] .bts-late-improvement-section[data-kind="ng-example"] {
+  border-inline-start: 5px solid var(--bad, #c84d4d);
+}
+
+body[data-condition="improved"] .bts-late-improvement-heading {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+body[data-condition="improved"] .bts-late-improvement-body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+body[data-condition="improved"] .bts-late-improvement-list {
+  margin: 8px 0 0;
+  padding-inline-start: 1.4em;
+}
+
+body[data-condition="improved"] .bts-late-improvement-list:empty {
+  display: none;
+}
+
+body[data-condition="improved"] .bts-late-improvement-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  margin: 10px 0 0;
+  border-radius: 14px;
+  object-fit: contain;
+}
+
+body[data-condition="improved"] .bts-late-improvement-media[hidden],
+body[data-condition="improved"] .bts-late-improvement-media:not([src]),
+body[data-condition="improved"] .bts-late-improvement-media[src=""] {
+  display: none;
+}
+
+body[data-condition="improved"] .bts-late-improvement-mark {
+  padding: .08em .24em;
+  border-radius: .3em;
+  background: #fff1a8;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+body[data-condition="improved"] .bts-late-improvement-action {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #dbe3e8);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--accent, #2e5bff);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.35;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+body[data-condition="improved"] .bts-late-improvement-action:focus-visible {
+  outline: 3px solid rgba(46, 91, 255, .28);
+  outline-offset: 3px;
+}
+
+/* New experiment setup/status UI. These unique classes never match baseline UI. */
+.bts-late-setup {
+  max-width: 780px;
+  margin: 36px auto;
+  padding: 20px;
+  border: 1px solid var(--border, #dbe3e8);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--text, #1d2733);
+  overflow-wrap: anywhere;
+}
+
+.bts-late-setup[hidden],
+.bts-late-status[hidden],
+.bts-late-error[hidden],
+.bts-late-setup:empty,
+.bts-late-status:empty,
+.bts-late-error:empty {
+  display: none;
+}
+
+.bts-late-status,
+.bts-late-error {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #dbe3e8);
+  border-radius: 14px;
+  background: var(--soft, #f7f9fb);
+  color: var(--text, #1d2733);
+  font-weight: 700;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.bts-late-status[data-state="sending"],
+.bts-late-status[data-state="restoring"] {
+  border-color: #b8c6ff;
+  background: #f4f7ff;
+  color: #32408f;
+}
+
+.bts-late-status[data-state="saved"] {
+  border-color: rgba(47, 143, 83, .45);
+  background: #f1faf4;
+  color: #236b3e;
+}
+
+.bts-late-error {
+  border-width: 2px;
+  border-color: rgba(200, 77, 77, .55);
+  background: #fff3f3;
+  color: #7f2525;
+}
+
+.bts-late-status:focus-visible,
+.bts-late-error:focus-visible,
+.bts-late-setup:focus-visible {
+  outline: 3px solid rgba(46, 91, 255, .28);
+  outline-offset: 3px;
+}
+
+/* Shared late-study evaluation media; rendered only when a researcher adds it. */
+.bts-late-evaluation-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 16px;
+  border-radius: 18px;
+  object-fit: contain;
+}
+
+.bts-late-evaluation-image:not([src]),
+.bts-late-evaluation-image[src=""] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  body[data-condition="no_image"] .bts-late-scene,
+  body[data-condition="improved"] .bts-late-improvement-section {
+    padding: 13px 14px;
+    border-radius: 14px;
+  }
+
+  body[data-condition="no_image"] .bts-late-scene-title {
+    font-size: 18px;
+  }
+
+  body[data-condition="improved"] .bts-late-improvement {
+    gap: 10px;
+  }
+
+  body[data-condition="improved"] .bts-late-improvement-action {
+    width: 100%;
+  }
+
+  .bts-late-setup {
+    margin: 18px 0;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .bts-late-status,
+  .bts-late-error {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .bts-late-evaluation-image {
+    margin-bottom: 14px;
+    border-radius: 14px;
+  }
+}
+
+@media (forced-colors: active) {
+  body[data-condition="no_image"] .bts-late-scene,
+  body[data-condition="improved"] .bts-late-improvement-section,
+  body[data-condition="improved"] .bts-late-improvement-action,
+  .bts-late-setup,
+  .bts-late-status,
+  .bts-late-error {
+    border-color: CanvasText;
+  }
+
+  body[data-condition="improved"] .bts-late-improvement-mark {
+    color: HighlightText;
+    background: Highlight;
+  }
+}
