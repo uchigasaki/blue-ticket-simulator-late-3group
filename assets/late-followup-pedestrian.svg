@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">停留所付近の歩道 / Sidewalk by a bus stop</title>
+  <desc id="desc">Top view. A bicycle approaches from below. A pedestrian ahead moves right toward a bus stop beside the roadway.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#655146"/></marker></defs>
+  <rect width="640" height="400" rx="12" fill="#edf3ec"/>
+  <rect x="140" y="55" width="352" height="345" fill="#eee9de"/>
+  <rect x="500" y="55" width="140" height="345" fill="#d4dae0"/>
+  <path d="M496 55V400" stroke="#84929a" stroke-width="8"/>
+  <rect x="436" y="105" width="45" height="133" rx="8" fill="#d7e2e7" stroke="#6e838e" stroke-width="3"/>
+  <circle cx="281" cy="165" r="14" fill="#655146"/>
+  <path d="M281 183V219M261 193H299M281 219L265 239M281 219L297 239" fill="none" stroke="#655146" stroke-width="6" stroke-linecap="round"/>
+  <path d="M310 181H416" stroke="#655146" stroke-width="5" marker-end="url(#arrow)"/>
+  <g fill="none" stroke="#285878" stroke-width="5" stroke-linecap="round">
+    <ellipse cx="332" cy="293" rx="7" ry="18"/><ellipse cx="332" cy="346" rx="7" ry="18"/>
+    <path d="M332 293V346M313 307H351M323 333H341M371 317V280M364 287L371 278L378 287"/>
+  </g>
+  <g font-family="sans-serif" fill="#25333b" font-size="19" text-anchor="middle">
+    <text x="320" y="31">模式図 / Diagram</text><text x="275" y="86">歩道 / Sidewalk</text>
+    <text x="565" y="111">車道</text><text x="565" y="135">Roadway</text>
+    <text x="451" y="271">停留所</text><text x="451" y="295">Bus stop</text>
+    <text x="273" y="143">歩行者 / Pedestrian</text><text x="323" y="385">自転車 / Bicycle</text>
+  </g>
+</svg>

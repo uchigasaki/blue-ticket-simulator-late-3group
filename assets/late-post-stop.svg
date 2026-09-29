@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">交差点 / Intersection</title>
+  <desc id="desc">Top view. A bicycle approaches a stop line and a stop sign from below. No action or answer is indicated.</desc>
+  <rect width="640" height="400" rx="12" fill="#edf3ec"/>
+  <path d="M220 0H420V400H220ZM0 105H640V225H0Z" fill="#d4dae0"/>
+  <path d="M0 165H220M420 165H640M320 0V105" stroke="#fff" stroke-width="5" stroke-dasharray="20 18"/>
+  <path d="M228 256H310" stroke="#fff" stroke-width="12"/>
+  <path d="M169 214V286" stroke="#68727c" stroke-width="7"/>
+  <path d="M127 188H211L169 258Z" fill="#b43d3d" stroke="#fff" stroke-width="4"/>
+  <text x="169" y="212" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#fff">止まれ</text>
+  <text x="169" y="232" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#fff">STOP</text>
+  <g fill="none" stroke="#285878" stroke-width="5" stroke-linecap="round">
+    <ellipse cx="270" cy="306" rx="7" ry="18"/><ellipse cx="270" cy="357" rx="7" ry="18"/>
+    <path d="M270 306V357M251 318H289M261 342H279M294 322V287M287 294L294 285L301 294"/>
+  </g>
+  <g font-family="sans-serif" fill="#25333b" font-size="20">
+    <text x="20" y="34">模式図 / Diagram</text>
+    <text x="332" y="270">停止線 / Stop line</text>
+    <text x="330" y="335">自転車 / Bicycle</text>
+  </g>
+</svg>

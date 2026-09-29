@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">T字路 / T-junction</title>
+  <desc id="desc">Top view. A bicycle approaches a wider road from below. Its approach has a stop sign and a stop line. No action or answer is indicated.</desc>
+  <rect width="640" height="400" rx="12" fill="#edf3ec"/>
+  <path d="M0 80H640V218H420V400H240V218H0Z" fill="#d4dae0"/>
+  <path d="M0 149H640" stroke="#fff" stroke-width="5" stroke-dasharray="20 18"/>
+  <path d="M248 255H323" stroke="#fff" stroke-width="12"/>
+  <path d="M184 218V286" stroke="#68727c" stroke-width="7"/>
+  <path d="M142 191H226L184 261Z" fill="#b43d3d" stroke="#fff" stroke-width="4"/>
+  <text x="184" y="215" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#fff">止まれ</text>
+  <text x="184" y="235" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#fff">STOP</text>
+  <g fill="none" stroke="#285878" stroke-width="5" stroke-linecap="round">
+    <ellipse cx="289" cy="306" rx="7" ry="18"/><ellipse cx="289" cy="357" rx="7" ry="18"/>
+    <path d="M289 306V357M270 318H308M280 342H298M331 322V287M324 294L331 285L338 294"/>
+  </g>
+  <g font-family="sans-serif" fill="#25333b" font-size="20">
+    <text x="20" y="34">模式図 / Diagram</text><text x="360" y="275">停止線 / Stop line</text>
+    <text x="367" y="347">自転車 / Bicycle</text>
+  </g>
+</svg>
