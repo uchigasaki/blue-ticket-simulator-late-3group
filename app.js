@@ -661,12 +661,13 @@ function renderPreSurvey(){
   const sharedDeviceNotice = sharedDeviceMessage();
   const summary = surveyErrorSummary();
   const assignmentNotice = state.error
-    ? `<p class="bts-late-error" role="alert">${escapeHtml(state.error)}</p>`
+    ? `<div class="bts-late-error" role="alert"><p>${escapeHtml(state.error)}</p><p><a href="./connection-check.html" target="_blank" rel="noopener noreferrer">${state.lang === "ja" ? "回答を送信せずに通信を確認する（別タブ）" : "Check connection without sending responses (new tab)"}</a></p></div>`
     : "";
-  const startLabel = t('start');
+  const startLabel = state.isAssigningCondition ? (state.lang === "ja" ? "接続確認中…" : "Connecting…") : t('start');
   app.innerHTML = layout(`
     ${summary}
     ${assignmentNotice}
+    ${state.isAssigningCondition ? `<p class="bts-late-status" role="status">${state.lang === "ja" ? "教材を準備しています。Googleへの接続に時間がかかる場合があります。この画面を閉じずにお待ちください。" : "Preparing your learning material. The Google connection may take a little time. Please keep this page open."}</p>` : ""}
     ${renderStudyInformation()}
     <section class="card">
       <div class="theme">${escapeHtml(t('surveyTitle'))}</div>
@@ -740,20 +741,33 @@ async function submitPreSurvey(e){
   } catch(error) {
     console.error("Condition assignment failed", error?.code || "ASSIGNMENT_FAILED");
     state.isAssigningCondition = false;
-    const rejection = error?.details?.error || error?.message;
-    state.error = rejection === "production_enrollment_not_open"
-      ? (state.lang === "ja" ? "まだ募集開始前です。表示された募集期間をご確認ください。" : "Recruitment has not opened yet. Please check the recruitment dates above.")
-      : rejection === "production_enrollment_closed"
-        ? (state.lang === "ja" ? "新規参加の受付期間が終了しました。" : "The recruitment period for new participation has ended.")
-        : state.lang === "ja"
-          ? "条件割付を確認できませんでした。通信を確認して、もう一度「開始」を押してください。"
-          : "The assignment could not be confirmed. Check the connection and press Start again.";
+    state.error = assignmentErrorText(error, state.lang);
     persistState();
     return renderPreSurvey();
   }
   state.isAssigningCondition = false;
   state.introIndex = 0;
   setScreen("intro");
+}
+
+function assignmentErrorText(error, language){
+  const rejection = error?.details?.error;
+  const candidates = [rejection, error?.code, error?.message];
+  const known = {
+    production_enrollment_not_open: ["まだ募集開始前です。表示された募集期間をご確認ください。", "Recruitment has not opened yet. Check the recruitment dates above."],
+    production_enrollment_closed: ["新規参加の受付期間が終了しました。", "The recruitment period for new participation has ended."],
+    production_session_conflict: ["この参加者IDは、別のブラウザーまたは別の回答で開始済みです。最初に開始した画面で回答を続けてください。元の画面を使えない場合は、IDを変更せず研究者にご相談ください。", "This participant ID was already started in another browser or session. Continue in the original page. If it is unavailable, contact the researcher without changing your ID."],
+    ASSIGNMENT_SESSION_MISMATCH: ["この端末に別の回答セッションが保存されています。元の回答画面で続けるか、研究者にご相談ください。", "A different response session is stored on this device. Continue in its original page or contact the researcher."],
+    ASSIGNMENT_TIMEOUT: ["Googleからの応答に時間がかかっています。入力内容は保持しています。そのまま少し待って、もう一度「開始」を押してください。", "Google is taking longer to respond. Your input is preserved. Wait a moment and press Start again."],
+    ASSIGNMENT_NETWORK_ERROR: ["このブラウザーからGoogleの回答サーバーへ接続できませんでした。ページを再読み込みするか通信環境を確認してください。改善しない場合は下のエラーコードを研究者へお知らせください。", "This browser could not connect to the Google study server. Reload the page or check your connection. If it persists, send the error code below to the researcher."],
+    assignment_busy: ["他の回答を処理しています。入力内容は保持しています。少し待って、もう一度「開始」を押してください。", "The server is processing other responses. Your input is preserved. Wait a moment and press Start again."],
+    INVALID_ASSIGNMENT_RESPONSE: ["Googleから受け取った割付情報を照合できませんでした。画面を閉じず、研究者へエラーコードをお知らせください。", "The assignment returned by Google could not be verified. Keep this page open and contact the researcher with the error code."],
+    STORAGE_UNAVAILABLE: ["ブラウザーの一時保存が利用できません。保存を許可した通常のブラウザーで開いてください。", "Browser session storage is unavailable. Open a regular browser with storage enabled."]
+  };
+  const code = candidates.find(candidate => Object.prototype.hasOwnProperty.call(known, candidate)) ||
+    (/^[A-Za-z0-9_]{1,80}$/.test(String(error?.code || "")) ? error.code : "ASSIGNMENT_FAILED");
+  const text = known[code]?.[language === "en" ? 1 : 0] || (language === "en" ? "The assignment could not be confirmed. Keep this page open and tell the researcher the error code." : "条件割付を確認できませんでした。画面を閉じず、研究者に次のエラーコードをお知らせください。");
+  return `${text} [${code}]`;
 }
 
 function renderIntro(){
@@ -1297,13 +1311,24 @@ function clearPendingSubmission(submissionId){
   try { localStorage.removeItem(pendingSubmissionKey(submissionId)); } catch(_error) {}
 }
 async function postPayload(payload){
-  await fetch(LOG_ENDPOINT, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {"Content-Type":"text/plain;charset=utf-8"},
-    referrerPolicy: "no-referrer",
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), Number(EXPERIMENT_CONFIG.jsonp?.timeoutMs) || 45000);
+  try {
+    await fetch(LOG_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      credentials: "omit",
+      headers: {"Content-Type":"text/plain;charset=utf-8"},
+      referrerPolicy: "no-referrer",
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } catch(_sendError) {
+    // Google may have stored the response before the POST failed or timed out.
+    // Check its receipt next, using the unchanged pending submission identity.
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 function waitMs(milliseconds){
   return new Promise(resolve => window.setTimeout(resolve, milliseconds));

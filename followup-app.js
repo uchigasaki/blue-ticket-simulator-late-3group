@@ -95,14 +95,29 @@
       const callback = "btsFollowup_" + randomId().replace(/[^A-Za-z0-9]/g, "");
       const script = document.createElement("script");
       let timer;
-      const cleanup = () => { clearTimeout(timer); script.remove(); delete window[callback]; };
-      window[callback] = response => { cleanup(); resolve(response); };
-      script.onerror = () => { cleanup(); reject(new Error("network_error")); };
+      let settled = false;
+      const finish = (error, response) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        script.remove();
+        if (error) {
+          // A removed Google script may still arrive after a retry has begun.
+          const ignore = () => {};
+          window[callback] = ignore;
+          setTimeout(() => { if (window[callback] === ignore) delete window[callback]; }, 360000);
+          reject(error);
+        } else { delete window[callback]; resolve(response); }
+      };
+      window[callback] = response => finish(null, response);
+      script.onerror = () => finish(new Error("network_error"));
       const url = new URL(config.serverEndpoint);
       Object.entries({ ...parameters, callback }).forEach(([key, value]) => url.searchParams.set(key, String(value)));
       script.referrerPolicy = "no-referrer";
+      script.crossOrigin = "anonymous";
+      script.async = true;
       script.src = url.toString();
-      timer = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 12000);
+      timer = setTimeout(() => finish(new Error("timeout")), Number(config.jsonp?.timeoutMs) || 45000);
       document.head.appendChild(script);
     });
   }
@@ -244,8 +259,8 @@
     try {
       if (preview) { draft.completed = true; save(); form.classList.add("hidden"); status("previewSuccess"); return; }
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      try { await fetch(config.serverEndpoint, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: JSON.stringify(draft.pending), signal: controller.signal, referrerPolicy: "no-referrer" }); }
+      const timer = setTimeout(() => controller.abort(), Number(config.jsonp?.timeoutMs) || 45000);
+      try { await fetch(config.serverEndpoint, { method: "POST", mode: "no-cors", credentials: "omit", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: JSON.stringify(draft.pending), signal: controller.signal, referrerPolicy: "no-referrer" }); }
       catch (_sendError) { /* The server may have stored the response; always check its receipt. */ }
       finally { clearTimeout(timer); }
       const request = { action: "receipt", schema_version: 2, submission_id: draft.submissionId, token };

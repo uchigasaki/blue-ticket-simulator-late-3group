@@ -72,7 +72,8 @@
 
     jsonp: {
       callbackParameter: "callback",
-      timeoutMs: 10000
+      // Apps Script execution + redirect/network time can exceed 10 seconds.
+      timeoutMs: 45000
     },
 
     logging: {

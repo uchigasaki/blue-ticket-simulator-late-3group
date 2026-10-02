@@ -357,15 +357,28 @@
 
     return new Promise(function (resolve, reject) {
       const callbackParameter = config.jsonp.callbackParameter || "callback";
-      const timeoutMs = Number(settings.timeoutMs || config.jsonp.timeoutMs || 10000);
+      const timeoutMs = Number(settings.timeoutMs || config.jsonp.timeoutMs || 45000);
       const callbackName = "__btsAssignment_" + createUuid().replace(/-/g, "");
       let script = null;
       let timer = null;
       let settled = false;
 
-      function cleanup() {
+      function cleanup(preserveLateCallback) {
         if (timer) global.clearTimeout(timer);
         if (script && script.parentNode) script.parentNode.removeChild(script);
+        if (preserveLateCallback && settings.ignoreLateAssignmentCallback === true) {
+          // Removing a script does not reliably cancel an in-flight GAS reply.
+          // Discard that reply without letting it settle a retry or create an
+          // undefined-callback error. The bounded tombstone contains no data.
+          const ignore = function () {};
+          global[callbackName] = ignore;
+          global.setTimeout(function () {
+            if (global[callbackName] === ignore) {
+              try { delete global[callbackName]; } catch (_error) { global[callbackName] = undefined; }
+            }
+          }, 360000);
+          return;
+        }
         try {
           delete global[callbackName];
         } catch (_error) {
@@ -376,7 +389,7 @@
       function finish(error, value) {
         if (settled) return;
         settled = true;
-        cleanup();
+        cleanup(Boolean(error));
         if (error) reject(error);
         else resolve(value);
       }
@@ -403,6 +416,9 @@
       script = documentObject.createElement("script");
       script.async = true;
       script.referrerPolicy = "no-referrer";
+      // This is an anonymously deployed endpoint. Do not attach a browser's
+      // Google account cookies (including conflicting multi-login sessions).
+      script.crossOrigin = "anonymous";
       script.src = url.toString();
       script.onerror = function () {
         finish(new ExperimentContextError("ASSIGNMENT_NETWORK_ERROR", "The assignment server could not be reached."));
@@ -1311,9 +1327,10 @@
         evaluationData: settings.evaluationData,
         location: locationLike
       });
-      let response;
-      try {
-        response = await jsonpRequest(config.serverEndpoint, {
+      // At most one recovery request, using the SAME participant, session and
+      // client run. The server can therefore return a saved assignment even if
+      // its first successful response arrived after the browser timeout.
+      const request = {
           action: "assign",
           schema_version: config.schemaVersion,
           experiment_id: config.experimentId,
@@ -1325,26 +1342,39 @@
           request_id: runId,
           client_run_id: runId,
           session_id: sessionId
-        }, {
-          config: config,
-          document: settings.document,
-          location: locationLike,
-          timeoutMs: settings.timeoutMs
-        });
-      } catch (error) {
-        if (config.productionFailClosed) throw error;
-        throw new ExperimentContextError(
-          "UNSAFE_FALLBACK_BLOCKED",
-          "Client fallback allocation is disabled for research integrity.",
-          error
-        );
+      };
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        let response;
+        try {
+          response = await jsonpRequest(config.serverEndpoint, request, {
+            config: config,
+            document: settings.document,
+            location: locationLike,
+            timeoutMs: settings.timeoutMs,
+            ignoreLateAssignmentCallback: true
+          });
+        } catch (error) {
+          if (attempt === 0 && ["ASSIGNMENT_TIMEOUT", "ASSIGNMENT_NETWORK_ERROR"].includes(error?.code)) continue;
+          if (config.productionFailClosed) throw error;
+          throw new ExperimentContextError(
+            "UNSAFE_FALLBACK_BLOCKED",
+            "Client fallback allocation is disabled for research integrity.",
+            error
+          );
+        }
+        try {
+          assignment = normalizeRemoteAssignment(response, {
+            storeId: store,
+            participantId: participantId,
+            clientRunId: runId,
+            sessionId: sessionId
+          }, config);
+          break;
+        } catch (error) {
+          if (attempt === 0 && error?.code === "ASSIGNMENT_REJECTED" && error.details?.error === "assignment_busy") continue;
+          throw error;
+        }
       }
-      assignment = normalizeRemoteAssignment(response, {
-        storeId: store,
-        participantId: participantId,
-        clientRunId: runId,
-        sessionId: sessionId
-      }, config);
     }
 
     saveCachedAssignment(assignment, { config: config, storage: storage });
