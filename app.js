@@ -68,6 +68,7 @@ function createInitialState(){
     experimentDate: localDateString(),
     preSurveyAnswers: {},
     postSurveyAnswers: {},
+    postImageVersion: null,
     preSurveyLogs: [],
     postSurveyLogs: [],
     surveyTimings: {pre:{}, post:{}},
@@ -188,6 +189,7 @@ function readSessionState(){
     saved.preSurveyLogs = saved.preSurveyLogs || [];
     saved.postSurveyLogs = saved.postSurveyLogs || [];
     saved.surveyTimings = saved.surveyTimings || {pre:{}, post:{}};
+    restorePostImageVersion(saved);
     saved.questionElapsedMs = Number(saved.questionElapsedMs || 0);
     saved.questionDraft = saved.questionDraft || null;
     saved.questionControlValues = saved.questionControlValues || {};
@@ -282,9 +284,56 @@ function setScreen(screen){
   render();
   window.scrollTo({top:0, behavior:"smooth"});
 }
+function postSurveyHasStarted(saved){
+  const effectiveScreen = saved.screen === "resume" ? saved.resumeScreen : saved.screen;
+  return ["post", "final"].includes(effectiveScreen) || Boolean(
+    saved.phaseTimes?.post_started_at || saved.postSurveyCompletedAt ||
+    Object.keys(saved.postSurveyAnswers || {}).length ||
+    (Array.isArray(saved.postSurveyLogs) && saved.postSurveyLogs.length) ||
+    Object.keys(saved.surveyTimings?.post || {}).length
+  );
+}
+function restorePostImageVersion(saved){
+  // A pre-update post screen may already contain answers to the old diagrams.
+  // Pin that exposure before converting the saved screen into the resume screen.
+  if(!saved.postImageVersion && postSurveyHasStarted(saved)) {
+    const evaluation = window.EVALUATION_DATA || {};
+    saved.postImageVersion = evaluation.legacyPostImageVersion ||
+      (evaluation.postImageVersion || evaluation.postImageRevisions ? "unavailable-legacy-post-image-revision" : null);
+  }
+}
+function postImageRevision(version){
+  const evaluation = window.EVALUATION_DATA || {};
+  if(!evaluation.postImageVersion && !evaluation.postImageRevisions) return {version:null, items:null};
+  const selectedVersion = version || evaluation.postImageVersion;
+  const revisions = evaluation.postImageRevisions;
+  const revision = revisions && Object.prototype.hasOwnProperty.call(revisions, selectedVersion)
+    ? revisions[selectedVersion] : null;
+  const items = revision?.[state.lang];
+  if(!selectedVersion || !Array.isArray(items) || items.length === 0) {
+    const error = new Error("Saved post-survey image revision is unavailable; the saved response has been retained.");
+    error.code = "POST_IMAGE_REVISION_UNAVAILABLE";
+    throw error;
+  }
+  return {version:selectedVersion, items};
+}
 function surveyItems(phase){
   const base = phase === "pre" ? DATA.survey[state.lang] : DATA.postSurvey[state.lang];
-  return EXPERIMENT.mergeSurveyItems(base, phase, {language: state.lang});
+  const merged = EXPERIMENT.mergeSurveyItems(base, phase, {language: state.lang});
+  if(phase !== "post") return merged;
+  const revision = postImageRevision(state.postImageVersion);
+  if(!revision.items) return merged;
+  const replacements = new Map();
+  const mergedIds = new Set(merged.map(item => item.id));
+  for(const item of revision.items) {
+    if(!item?.id || !mergedIds.has(item.id) || replacements.has(item.id)) {
+      const error = new Error("Post-survey image revision does not match the saved instrument.");
+      error.code = "POST_IMAGE_REVISION_UNAVAILABLE";
+      throw error;
+    }
+    replacements.set(item.id, item);
+  }
+  return merged.map(item => replacements.get(item.id) || item);
 }
 function refreshActiveQuestions(){
   activeQuestions = state.condition === "original"
@@ -1080,12 +1129,32 @@ function renderResult(){
 
 function startPostSurvey(){
   if(state.screen !== "result") return;
+  try {
+    // Validate before persisting the transition, then keep this image set for the
+    // whole post-survey, including validation rerenders and later restoration.
+    surveyItems("post");
+    state.postImageVersion = postImageRevision(state.postImageVersion).version;
+  } catch(_error) {
+    renderPostImageRevisionError();
+    return;
+  }
   state.phaseTimes.post_started_at = state.phaseTimes.post_started_at || new Date().toISOString();
   setScreen("post");
 }
 
+function renderPostImageRevisionError(){
+  app.innerHTML = layout(`<section class="card stack" role="alert"><h2 class="title">${state.lang === "ja" ? "事後アンケートの画像版を確認できません" : "The post-survey image version could not be verified"}</h2><p>${state.lang === "ja" ? "保存された回答・参加者IDは保持しています。画像版を変更して回答を混ぜないため、ここで停止しています。画面を閉じず、研究担当者にお知らせください。" : "Your saved answers and participant ID are retained. This screen is paused to avoid mixing image versions. Keep the page open and contact the researcher."}</p><p class="notice">[POST_IMAGE_REVISION_UNAVAILABLE]</p><p>${escapeHtml(EXPERIMENT_CONFIG.studyInformation?.contactEmail || "")}</p></section>`);
+}
 function renderPostSurvey(){
-  const survey = surveyItems("post");
+  let survey;
+  try {
+    survey = surveyItems("post");
+    state.postImageVersion = postImageRevision(state.postImageVersion).version;
+    persistState();
+  } catch(_error) {
+    renderPostImageRevisionError();
+    return;
+  }
   const fields = renderSurveyFields(survey, state.postSurveyAnswers, "post_");
   const summary = surveyErrorSummary();
   const submittingNotice = `<p class="notice sending-notice${state.isSubmittingPost ? " bts-late-status" : ""}"${state.isSubmittingPost ? ' data-state="sending" role="status"' : ""}>${state.isSubmittingPost
@@ -1113,7 +1182,13 @@ function submitPostSurvey(e){
   if(state.isSubmittingPost) return;
   state.validationErrors = {};
   state.error = "";
-  const currentSurvey = surveyItems("post");
+  let currentSurvey;
+  try {
+    currentSurvey = surveyItems("post");
+  } catch(_error) {
+    renderPostImageRevisionError();
+    return;
+  }
   if(!collectSurvey(e.target, currentSurvey, state.postSurveyAnswers, "post_")) {
     renderPostSurvey();
     focusFirstValidationError();
@@ -1253,6 +1328,7 @@ function buildSurveyLogs(phase, items, answers, completedAt){
 }
 
 function buildSummary(){
+  if(state.postImageVersion) postImageRevision(state.postImageVersion);
   const totalQuestions = DATA.questions.length;
   const overall = Math.round((state.score / totalQuestions) * 100);
   const situationIds = DATA.questions.filter(q => q.score_domain === "situation").map(q => q.id);
@@ -1260,6 +1336,7 @@ function buildSummary(){
   const situationCorrect = state.answers.filter(a => a.is_correct && situationIds.includes(a.question_id)).length;
   const systemCorrect = state.answers.filter(a => a.is_correct && systemIds.includes(a.question_id)).length;
   return {
+    post_image_version: state.postImageVersion || null,
     overall_accuracy: overall,
     situation_score: situationIds.length ? Math.round((situationCorrect / situationIds.length) * 100) : 0,
     system_score: systemIds.length ? Math.round((systemCorrect / systemIds.length) * 100) : 0
@@ -1424,6 +1501,7 @@ function downloadCsv(){
   rows.push(["session","content_version",EXPERIMENT_CONFIG.contentVersion]);
   rows.push(["session","common_correction_version",EXPERIMENT_CONFIG.commonCorrectionVersion]);
   rows.push(["session","instrument_version",window.EVALUATION_DATA?.instrumentVersion || ""]);
+  rows.push(["session","post_image_version",state.postImageVersion || ""]);
   rows.push(["session","baseline_variant",EXPERIMENT_CONFIG.baselineVariant]);
   rows.push(["session","session_id",state.sessionId]);
   rows.push(["session","participant_id",state.participantId]);

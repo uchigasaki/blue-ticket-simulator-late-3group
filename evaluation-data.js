@@ -61,6 +61,48 @@
     scale("late_post_mental_effort", "教材の内容を理解するために、どのくらい考える必要がありましたか。", "How much mental effort did you need to understand the learning material?", "ほとんど必要なかった", "非常に必要だった", "Very little", "A great deal")
   ];
 
+  // Keep the adopted diagrams available for sessions that already entered post.
+  // The revision changes presentation only; questions, choices and keys stay fixed.
+  const legacyPostImageVersion = "2026-late-post-diagram-v1";
+  const postImageVersion = "2026-10-post-pov-v1";
+  const postImageIds = new Set(["late_post_transfer_notice", "late_post_transfer_stop", "late_post_transfer_pedestrian"]);
+  const legacyPostImageItems = post.filter(item => postImageIds.has(item.ja.id));
+  const postPresentation = {
+    late_post_transfer_notice: {
+      ja: { title: "追加確認：ここからは、学習時とは異なる場面で判断してください。画像は実際の場面を模した一人称視点の生成画像です。正誤の解説は表示されません。" },
+      en: { title: "Additional check: Judge situations that differ from the learning scenes. The images are generated first-person scenes representing real situations. Correctness feedback will not be shown." }
+    },
+    late_post_transfer_stop: {
+      ja: {
+        title: "追加確認1．画像の交差点に自転車で近づいている。自分の進路には「止まれ」標識と停止線がある。左右がよく見えて、車は見当たらない。このあと取る行動として適切なものを1つ選んでください。",
+        imageAlt: "自転車の運転者視点で見た十字交差点。手前に停止線、左側に止まれ標識があり、左右の道路に車は見当たらない。"
+      },
+      en: { imageAlt: "A bicycle rider's view of a four-way intersection. A stop line is ahead, a stop sign is on the left, and no vehicles are visible on either side." },
+      image: "assets/late-post-stop-pov-v1.png"
+    },
+    late_post_transfer_pedestrian: {
+      ja: {
+        title: "追加確認2．普通自転車の通行が認められている歩道を徐行している。画像のように、前の歩行者が店の入口へ向きを変え、このまま進むとその通行を妨げる。適切な行動を1つ選んでください。",
+        imageAlt: "自転車の運転者視点で見た歩道。左に店の入口、右に車道があり、前方の歩行者が自転車の進路を横切る位置で左の入口へ向きを変えている。"
+      },
+      en: { imageAlt: "A bicycle rider's view along a sidewalk. A shop entrance is on the left and the roadway is on the right. The pedestrian ahead is across the bicycle's path, turning toward the entrance on the left." },
+      image: "assets/late-post-pedestrian-pov-v1.png"
+    }
+  };
+  const revisedPost = post.map(item => {
+    const revision = postPresentation[item.ja.id];
+    if (!revision) return item;
+    const result = {};
+    for (const language of ["ja", "en"]) {
+      result[language] = { ...item[language], ...revision[language] };
+      if (revision.image) Object.assign(result[language], {
+        image: revision.image, imageVersion: postImageVersion,
+        modality: "first_person_generated_image"
+      });
+    }
+    return result;
+  });
+
   const followup = [
     pair("late_followup_notice", "notice", "1週間後の確認：今の理解で回答してください。回答中は前の教材や他の資料を見ず、迷う場合も最も適切だと思うものを選んでください。図は位置関係を示す模式図です。", "One-week check: Answer using your current understanding without consulting the earlier material or other sources. If unsure, choose the answer you consider most appropriate. The diagrams show relative positions.", null, null, { optional: true }),
     illustrated(pair("late_followup_transfer_stop", "single", "確認1．図のように、細い道から広い道へ自転車で左折する。自分の進路に「止まれ」標識と停止線があり、近づく車は見当たらない。適切な行動を1つ選んでください。", "Check 1. As shown, you will turn left by bicycle from a narrow road onto a wider road. Your approach has a stop sign and a stop line, and no approaching vehicles are visible. Choose the appropriate action.",
@@ -89,6 +131,12 @@
   global.EVALUATION_DATA = deepFreeze({
     schemaVersion: 2,
     instrumentVersion: "2026-late-instrument-v2",
+    postImageVersion,
+    legacyPostImageVersion,
+    postImageRevisions: {
+      [legacyPostImageVersion]: bilingualItems(legacyPostImageItems),
+      [postImageVersion]: bilingualItems(revisedPost.filter(item => postImageIds.has(item.ja.id)))
+    },
     readyForProduction: true,
     contentStatus: "researcher_adopted",
     contentReviewIssues: [
@@ -135,7 +183,7 @@
     // Drafts shared by all three conditions; approval is tracked separately above.
     extensions: {
       pre: bilingualItems(pre),
-      post: bilingualItems(post),
+      post: bilingualItems(revisedPost),
       followup: bilingualItems(followup)
     },
 
